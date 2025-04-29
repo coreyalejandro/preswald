@@ -1,3 +1,4 @@
+import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -19,11 +20,11 @@ try:
     connect()
 
     # --- Helper Functions ---
+    @st.cache_data
     def load_data(filepath="data/my_sample_superstore.csv"):
         """Loads and preprocesses data, ensuring hashable types before return."""
         logger.info("Attempting to load and process data...")
         try:
-            # Specify low_memory=False which can sometimes help with dtype inference
             df = pd.read_csv(filepath, encoding='latin1', low_memory=False)
             logger.info(f"CSV loaded. Initial shape: {df.shape}")
             
@@ -37,8 +38,7 @@ try:
             # --- Simulate Missing Data ---
             np.random.seed(42)
             qty_max = df['Quantity'].max() if not df['Quantity'].empty else 10
-            # Ensure standard int for simulated data
-            df['Quantity in Stock'] = np.random.randint(qty_max, qty_max * 5 + 10, size=len(df)).astype(int)
+            df['Quantity in Stock'] = np.random.randint(qty_max, qty_max * 5 + 10, size=len(df))  # Keep as numpy int initially
 
             # Ensure string types for simulated categoricals
             national_brands_subcats = ['Bookcases', 'Chairs', 'Tables', 'Appliances', 'Machines', 'Copiers', 'Phones']
@@ -69,35 +69,20 @@ try:
             df['Sales Contribution % Overall'] = (df['Sales'] / total_sales_overall * 100) if total_sales_overall != 0 else 0
             df['Profit Contribution % Overall'] = (df['Profit'] / total_profit_overall * 100) if total_profit_overall != 0 else 0
 
-            # --- Final Aggressive Type Conversion before Return ---
-            logger.info("Starting FINAL aggressive type conversion before potential caching...")
-            logger.info(f"dtypes BEFORE final conversion:\n{df.dtypes}")
-
-            # Select columns with *any* integer-like dtype (numpy or pandas nullable)
-            int_cols = df.select_dtypes(include=['integer', 'int32', 'int64']).columns
-
-            for col in int_cols:
-                # IMPORTANT: Check for NaNs first
-                if df[col].isnull().sum() > 0:
-                    # If NaNs exist, must convert to float as standard int can't handle NaNs
-                    logger.warning(f"Column '{col}' ({df[col].dtype}) has NaNs. Converting to float64.")
-                    df[col] = df[col].astype(float)  # Use standard float
+            # --- CONVERT POTENTIALLY PROBLEMATIC INT COLUMNS TO FLOAT ---
+            # Apply this conversion right before returning the DataFrame
+            logger.info("Converting key integer columns to float64 before caching...")
+            cols_to_float = ['Row ID', 'Quantity', 'Order Year', 'Quantity in Stock']
+            for col in cols_to_float:
+                if col in df.columns:
+                    logger.info(f"Converting '{col}' ({df[col].dtype}) to float64.")
+                    df[col] = df[col].astype(np.float64)  # Use numpy float64
                 else:
-                    # If no NaNs, attempt conversion to standard Python int
-                    logger.info(f"Column '{col}' ({df[col].dtype}) has no NaNs. Attempting conversion to standard int.")
-                    try:
-                        # Use apply with int constructor for robust conversion
-                        df[col] = df[col].apply(int)
-                        logger.info(f"Successfully converted '{col}' to standard int.")
-                    except OverflowError:
-                        logger.warning(f"OverflowError converting '{col}' to standard int. Converting to float64 instead.")
-                        df[col] = df[col].astype(float)  # Fallback to float
-                    except Exception as e:
-                        logger.error(f"Could not convert '{col}' to standard int: {e}. Converting to float.")
-                        df[col] = df[col].astype(float)  # Fallback to float
+                    logger.warning(f"Column '{col}' not found for float conversion.")
 
-            logger.info(f"dtypes AFTER final conversion:\n{df.dtypes}")
+            logger.info(f"Final dtypes before return:\n{df.dtypes}")
             logger.info("Data processing complete.")
+            st.session_state['data_loaded'] = True
             return df
 
         except FileNotFoundError:
