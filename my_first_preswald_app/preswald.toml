@@ -1,19 +1,19 @@
 [project]
-title = "Preswald Project"
+title = "Superstore Analysis Dashboard"
 version = "0.1.0"
 port = 8501
 slug = "my-first-preswald-app-540052"  
 entrypoint = "hello.py"    
 
 [branding]
-name = "Preswald Project"
+name = "Superstore Analysis Dashboard"
 logo = "images/logo.png"
 favicon = "images/favicon.ico"
 primaryColor = "#F89613"
 
 [data.my_sample_superstore]
-my_sample_superstore = { type = "csv", path = "data/my_sample_superstore.csv" }
-
+type = "csv"
+path = "data/my_sample_superstore.csv"
 
 [logging]
 level = "INFO"  
