@@ -20,30 +20,30 @@ try:
 
     # --- Helper Functions ---
     def load_data(filepath="data/my_sample_superstore.csv"):
-        """Loads and preprocesses the Superstore data, ensuring hashable types."""
+        """Loads and preprocesses data, ensuring hashable types before return."""
         logger.info("Attempting to load and process data...")
         try:
-            df = pd.read_csv(filepath, encoding='latin1')
+            # Specify low_memory=False which can sometimes help with dtype inference
+            df = pd.read_csv(filepath, encoding='latin1', low_memory=False)
             logger.info(f"CSV loaded. Initial shape: {df.shape}")
             
             # --- Basic Preprocessing ---
             df["Order Date"] = pd.to_datetime(df["Order Date"], format="%m/%d/%Y")
             df['Order Year'] = df['Order Date'].dt.year
-            df['Order Month'] = df['Order Date'].dt.to_period('M')
+            df['Order Month'] = df['Order Date'].dt.to_period('M').astype(str)  # Convert Period to string
             df['Order Week'] = df['Order Date'].dt.strftime('W%U')
             df["Profit Margin"] = np.where(df["Sales"] != 0, df["Profit"] / df["Sales"], 0)
 
             # --- Simulate Missing Data ---
             np.random.seed(42)
-            # Ensure simulated inventory is standard int
-            qty_max = df['Quantity'].max() if not df['Quantity'].empty else 10  # Handle empty Quantity
+            qty_max = df['Quantity'].max() if not df['Quantity'].empty else 10
+            # Ensure standard int for simulated data
             df['Quantity in Stock'] = np.random.randint(qty_max, qty_max * 5 + 10, size=len(df)).astype(int)
 
-            # Brand Type
+            # Ensure string types for simulated categoricals
             national_brands_subcats = ['Bookcases', 'Chairs', 'Tables', 'Appliances', 'Machines', 'Copiers', 'Phones']
             df['Brand Type'] = df['Sub-Category'].apply(lambda x: 'National' if x in national_brands_subcats else 'Private').astype(str)
 
-            # Size
             def assign_size(name):
                 name_lower = str(name).lower()
                 if 'small' in name_lower: return 'S'
@@ -56,7 +56,6 @@ try:
                 return 'W32'
             df['Simulated Size'] = df['Product Name'].apply(assign_size).astype(str)
 
-            # Color
             def assign_color(row):
                 if row['Profit'] < 0: return 'Red'
                 if row['Segment'] == 'Consumer': return 'Blue'
@@ -65,66 +64,49 @@ try:
             df['Simulated Color'] = df.apply(assign_color, axis=1).astype(str)
 
             # Calculate Contributions
-            total_sales = df["Sales"].sum()
-            total_profit = df["Profit"].sum()
-            df['Sales Contribution %'] = (df['Sales'] / total_sales * 100) if total_sales != 0 else 0
-            df['Profit Contribution %'] = (df['Profit'] / total_profit * 100) if total_profit != 0 else 0
+            total_sales_overall = df["Sales"].sum()
+            total_profit_overall = df["Profit"].sum()
+            df['Sales Contribution % Overall'] = (df['Sales'] / total_sales_overall * 100) if total_sales_overall != 0 else 0
+            df['Profit Contribution % Overall'] = (df['Profit'] / total_profit_overall * 100) if total_profit_overall != 0 else 0
 
-            # --- Aggressive Type Conversion before Return ---
-            logger.info("Starting aggressive type conversion before returning...")
-            logger.info(f"dtypes BEFORE conversion:\n{df.dtypes}")
+            # --- Final Aggressive Type Conversion before Return ---
+            logger.info("Starting FINAL aggressive type conversion before potential caching...")
+            logger.info(f"dtypes BEFORE final conversion:\n{df.dtypes}")
 
-            for col in df.columns:
-                # Convert specific numpy integer types if they exist
-                if df[col].dtype == np.int32 or df[col].dtype == np.int64:
-                    logger.info(f"Column '{col}' is numpy int type ({df[col].dtype}). Attempting conversion.")
-                    # Check for NaNs before converting to standard int
-                    if df[col].isnull().sum() == 0:
-                        try:
-                            # Try converting to standard Python int first
-                            df[col] = df[col].astype(int)
-                            logger.info(f"Successfully converted '{col}' to standard int.")
-                        except OverflowError:
-                            # If standard int overflows, fall back to float
-                            logger.warning(f"OverflowError converting '{col}' to standard int. Converting to float64 instead.")
-                            df[col] = df[col].astype(np.float64)
-                        except Exception as e:
-                            logger.error(f"Could not convert '{col}' to standard int: {e}. Trying float64.")
-                            try:
-                                df[col] = df[col].astype(np.float64)
-                            except Exception as e2:
-                                logger.error(f"Could not convert '{col}' to float64 either: {e2}.")
-                    else:
-                        # If column has NaNs, convert to float64 as standard int can't handle NaNs
-                        logger.warning(f"Column '{col}' has NaNs. Converting to float64.")
-                        df[col] = df[col].astype(np.float64)
-                # Convert Period objects to string (can sometimes cause issues)
-                elif pd.api.types.is_period_dtype(df[col]):
-                    logger.info(f"Converting PeriodDtype column '{col}' to string.")
-                    df[col] = df[col].astype(str)
-                # Convert potential Pandas IntegerArray types (like Int64) to float if they have NaNs
-                elif pd.api.types.is_integer_dtype(df[col]) and not (df[col].dtype == np.int32 or df[col].dtype == np.int64):
-                    if df[col].isnull().sum() > 0:
-                        logger.warning(f"Column '{col}' ({df[col].dtype}) has NaNs. Converting to float64.")
-                        df[col] = df[col].astype(np.float64)
-                    else:
-                        # If no NaNs, try converting to standard int
-                        try:
-                            logger.info(f"Column '{col}' ({df[col].dtype}) has no NaNs. Converting to standard int.")
-                            df[col] = df[col].astype(int)
-                        except Exception as e:
-                            logger.error(f"Could not convert nullable int '{col}' to standard int: {e}. Trying float64.")
-                            df[col] = df[col].astype(np.float64)
+            # Select columns with *any* integer-like dtype (numpy or pandas nullable)
+            int_cols = df.select_dtypes(include=['integer', 'int32', 'int64']).columns
 
-            logger.info(f"dtypes AFTER conversion:\n{df.dtypes}")
+            for col in int_cols:
+                # IMPORTANT: Check for NaNs first
+                if df[col].isnull().sum() > 0:
+                    # If NaNs exist, must convert to float as standard int can't handle NaNs
+                    logger.warning(f"Column '{col}' ({df[col].dtype}) has NaNs. Converting to float64.")
+                    df[col] = df[col].astype(float)  # Use standard float
+                else:
+                    # If no NaNs, attempt conversion to standard Python int
+                    logger.info(f"Column '{col}' ({df[col].dtype}) has no NaNs. Attempting conversion to standard int.")
+                    try:
+                        # Use apply with int constructor for robust conversion
+                        df[col] = df[col].apply(int)
+                        logger.info(f"Successfully converted '{col}' to standard int.")
+                    except OverflowError:
+                        logger.warning(f"OverflowError converting '{col}' to standard int. Converting to float64 instead.")
+                        df[col] = df[col].astype(float)  # Fallback to float
+                    except Exception as e:
+                        logger.error(f"Could not convert '{col}' to standard int: {e}. Converting to float.")
+                        df[col] = df[col].astype(float)  # Fallback to float
+
+            logger.info(f"dtypes AFTER final conversion:\n{df.dtypes}")
             logger.info("Data processing complete.")
             return df
 
         except FileNotFoundError:
+            text(f"⚠️ Error: Data file not found at {filepath}.")
             logger.error(f"FileNotFoundError: {filepath}")
             return None
         except Exception as e:
-            logger.error(f"Error in load_data: {e}", exc_info=True)  # Log full traceback
+            text(f"⚠️ An unexpected error occurred during data loading: {e}")
+            logger.error(f"Error in load_data: {e}", exc_info=True)
             return None
 
     def format_currency(value):
@@ -197,24 +179,23 @@ try:
     scatter_data = df_filtered.groupby(['Sub-Category', 'Segment']).agg({
         'Sales': lambda x: float(sum(x)),
         'Profit': lambda x: float(sum(x)),
-        'Sales Contribution %': lambda x: float(sum(x)),
-        'Profit Contribution %': lambda x: float(sum(x))
+        'Sales Contribution % Overall': lambda x: float(sum(x)),
+        'Profit Contribution % Overall': lambda x: float(sum(x))
     }).reset_index()
-    scatter_data.columns = ['Sub-Category', 'Segment', 'Total_Sales', 'Total_Profit', 'Sales_Contrib_Pct', 'Profit_Contrib_Pct']
 
     if not scatter_data.empty:
-        size_col = 'Total_Sales' if selected_metric_size == 'Sales' else 'Total_Profit'
+        size_col = 'Sales' if selected_metric_size == 'Sales' else 'Profit'
         fig1 = px.scatter(
             scatter_data,
-            x='Profit_Contrib_Pct',
-            y='Sales_Contrib_Pct',
+            x='Profit Contribution % Overall',
+            y='Sales Contribution % Overall',
             color='Segment',
             size=size_col,
-            hover_data=['Sub-Category', 'Total_Sales', 'Total_Profit'],
+            hover_data=['Sub-Category', 'Sales', 'Profit'],
             title='Contribution Analysis by Sub-Category & Segment',
             labels={
-                'Profit_Contrib_Pct': 'Margin Contrib %',
-                'Sales_Contrib_Pct': 'Net Sales Contrib %',
+                'Profit Contribution % Overall': 'Margin Contrib %',
+                'Sales Contribution % Overall': 'Net Sales Contrib %',
                 size_col: f'Total {selected_metric_size} (Size)'
             }
         )
@@ -223,24 +204,24 @@ try:
 
     # --- Panel 2: SKU Count Analysis ---
     text("## 2. SKU Count Analysis")
-    
+
     # SKU Count by Category & Segment
     sku_counts = df_filtered.groupby(['Category', 'Segment']).agg({
         'Product ID': lambda x: int(x.nunique())
     }).reset_index()
-    sku_counts.columns = ['Category', 'Segment', 'SKU Count']
-    
+
     # Create a stacked bar chart for SKU counts
-    fig2 = px.bar(
-        sku_counts,
-        x='Category',
-        y='SKU Count',
-        color='Segment',
-        title='SKU Count by Category & Segment',
-        barmode='stack'
-    )
-    fig2.update_layout(template="plotly_white")
-    plotly(fig2)
+    if not sku_counts.empty:
+        fig2 = px.bar(
+            sku_counts,
+            x='Category',
+            y='Product ID',
+            color='Segment',
+            title='SKU Count by Category & Segment',
+            barmode='stack'
+        )
+        fig2.update_layout(template="plotly_white")
+        plotly(fig2)
 
     # Display the detailed table below the chart
     text("### Detailed SKU Count Table")
@@ -300,15 +281,16 @@ try:
         'Inventory_Turnover': lambda x: float(x.mean())
     }).reset_index()
 
-    fig4 = px.line(
-        turnover_data,
-        x='Order Month',
-        y='Inventory_Turnover',
-        color='Segment',
-        title='Average Inventory Turnover by Segment Over Time'
-    )
-    fig4.update_layout(template="plotly_white")
-    plotly(fig4)
+    if not turnover_data.empty:
+        fig4 = px.line(
+            turnover_data,
+            x='Order Month',
+            y='Inventory_Turnover',
+            color='Segment',
+            title='Average Inventory Turnover by Segment Over Time'
+        )
+        fig4.update_layout(template="plotly_white")
+        plotly(fig4)
 
     # Days of Supply Summary
     dos_summary = df_filtered.groupby('Segment').agg({
@@ -335,15 +317,16 @@ try:
         'Product ID': lambda x: int(x.nunique())
     }).reset_index()
 
-    fig5 = px.treemap(
-        brand_dist,
-        path=[px.Constant("All"), 'Brand Type', 'Category'],
-        values='Sales',
-        color='Profit',
-        title='Brand Distribution by Category',
-        color_continuous_scale='RdYlBu'
-    )
-    plotly(fig5)
+    if not brand_dist.empty:
+        fig5 = px.treemap(
+            brand_dist,
+            path=[px.Constant("All"), 'Brand Type', 'Category'],
+            values='Sales',
+            color='Profit',
+            title='Brand Distribution by Category',
+            color_continuous_scale='RdYlBu'
+        )
+        plotly(fig5)
 
     # --- Panel 6: Size Analysis ---
     text("## 6. Size Analysis")
@@ -354,16 +337,17 @@ try:
         'Product ID': lambda x: int(x.nunique())
     }).reset_index()
 
-    fig6 = px.bar(
-        size_dist,
-        x='Category',
-        y='Sales',
-        color='Simulated Size',
-        title='Sales by Size and Category',
-        barmode='group'
-    )
-    fig6.update_layout(template="plotly_white")
-    plotly(fig6)
+    if not size_dist.empty:
+        fig6 = px.bar(
+            size_dist,
+            x='Category',
+            y='Sales',
+            color='Simulated Size',
+            title='Sales by Size and Category',
+            barmode='group'
+        )
+        fig6.update_layout(template="plotly_white")
+        plotly(fig6)
 
     # --- Panel 7: Word Cloud of Product Names ---
     text("## 7. Product Name Word Cloud")

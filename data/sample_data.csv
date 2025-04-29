@@ -1,0 +1,11 @@
+product_id,category,subcategory,name,price,inventory,sales,margin
+P001,Apparel,Shirts,Classic White T-Shirt,19.99,150,89,0.45
+P002,Apparel,Pants,Slim Fit Jeans,59.99,100,45,0.55
+P003,Accessories,Bags,Leather Tote Bag,89.99,50,22,0.60
+P004,Footwear,Sneakers,Running Shoes,79.99,80,38,0.50
+P005,Apparel,Dresses,Summer Maxi Dress,69.99,75,28,0.58
+P006,Accessories,Jewelry,Gold Necklace,129.99,30,12,0.65
+P007,Footwear,Boots,Ankle Boots,99.99,60,20,0.52
+P008,Apparel,Outerwear,Denim Jacket,79.99,70,25,0.54
+P009,Accessories,Belts,Leather Belt,39.99,90,42,0.48
+P010,Footwear,Sandals,Beach Sandals,29.99,120,65,0.42 

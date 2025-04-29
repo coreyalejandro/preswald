@@ -1,0 +1,8 @@
+[project]
+name = "merchandising-dashboard"
+description = "A merchandising assortment analysis dashboard"
+entrypoint = "my_first_preswald_app/hello.py"
+
+[app]
+title = "Merchandising Dashboard"
+static_dir = "static" 
