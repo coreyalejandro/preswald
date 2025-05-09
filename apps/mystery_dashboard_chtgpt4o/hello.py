@@ -1,3 +1,4 @@
+import os
 from preswald import Workflow, text, sidebar, get_df, selectbox, plotly
 import pandas as pd
 import plotly.express as px
@@ -6,8 +7,10 @@ workflow = Workflow()
 
 @workflow.atom()
 def load_data():
-    # Load merged data CSV directly
-    df = pd.read_csv("data/merged_data.csv")
+    # Load merged data CSV directly from the data directory
+    base_dir = os.path.dirname(__file__)
+    file_path = os.path.join(base_dir, "data", "merged_data.csv")
+    df = pd.read_csv(file_path)
     df["Order Date"] = pd.to_datetime(df["Order Date"])
     df["Profit Margin"] = df["Profit"] / df["Sales"]
     df["Month"] = df["Order Date"].dt.to_period("M").astype(str)
