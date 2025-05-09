@@ -11,17 +11,17 @@ COPY pyproject.toml .
 # Install dependencies from pyproject.toml
 RUN pip install .
 
-# Install preswald with exact version
-RUN pip install preswald=={preswald_version}
+# preswald dependency is declared in pyproject.toml and installed by pip install .
 
 # Copy app and assets
 COPY . .
 
-EXPOSE {port}
+EXPOSE 8501
 
 ENV PYTHONPATH=/app
-ENV SCRIPT_PATH=/app/app.py
-ENV PORT={port}
+# Entrypoint script defined in preswald.toml
+ENV SCRIPT_PATH=/app/hello.py
+ENV PORT=8501
 
 # Use startup script that calls start_server
 CMD ["python", "run.py"]

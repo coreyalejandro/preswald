@@ -1,0 +1,9 @@
+secrets.toml
+.preswald_deploy
+.env.structured
+# Python virtual environments and caches
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo

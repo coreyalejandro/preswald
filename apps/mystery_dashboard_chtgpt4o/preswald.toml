@@ -11,7 +11,7 @@ logo = "images/logo.png"
 favicon = "images/favicon.ico"
 primaryColor = "#F89613"
 
-[data.merged.data]
+[data.merged_data]
 type = "csv"
 path = "data/merged_data.csv"
 

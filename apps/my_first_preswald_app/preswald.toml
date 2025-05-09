@@ -1,7 +1,7 @@
 [project]
 title = "Superstore Analysis Dashboard"
 version = "0.1.0"
-port = 8501
+port = 8502
 slug = "my-first-preswald-app-540052"  
 entrypoint = "hello.py"    
 

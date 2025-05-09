@@ -1,16 +1,16 @@
 import pandas as pd
 import plotly.express as px
-from preswald import text, connect, plotly, column, row, table, sidebar
+from preswald import text, connect, plotly, table, sidebar
 
 # Initialize Preswald
 connect()
 
 # --- Sidebar ---
-with sidebar():
-    text("# Superstore Saga")
-    text("A Data Visualization Documentary")
-    text("---")
-    text("Explore the dramatic story of sales and profits through interactive visualizations.")
+sidebar()
+text("# Superstore Saga")
+text("A Data Visualization Documentary")
+text("---")
+text("Explore the dramatic story of sales and profits through interactive visualizations.")
 
 # --- Data Loading and Preprocessing ---
 df = pd.read_csv("data/my_sample_superstore.csv")

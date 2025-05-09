@@ -8,11 +8,10 @@ This monorepo consolidates all Preswald-related applications and shared packages
 - apps/supawald        — Serverless Supabase-based CMS
 - apps/my_first_preswald_app
 - apps/my_preswald_homepage
-- apps/my_preswald_projects
-- apps/my_project
+- apps/my_emerging_llm_architectures
+- apps/my_roo_code_preswald
+- apps/my_superstore_documentary
 - apps/mystery_dashboard_chtgpt4o
-- apps/preswald_project
-- apps/preswald_project_1
 
 ## Packages
 - packages/ui          — Shared ShadCN UI component library

@@ -486,17 +486,12 @@ def display_article_section(section):
 
 def main():
     """Main function to drive the Preswald app"""
-    
-    # Sidebar navigation
-    with sidebar():
-        text("# Emerging Architectures")
-        text("## for LLM Applications 2025")
-        text("---")
-        text("*An in-depth analysis of how LLM architectures have evolved since 2023*")
-        text("---")
+sidebar()
+text("# Emerging Architectures")
+text("## for LLM Applications 2025")
         
-        text("### Navigation")
-        section_selection = selectbox(
+text("### Navigation")
+section_selection = selectbox(
             "Choose a section:",
             options=[
                 "Introduction", 

@@ -1,9 +1,9 @@
 [project]
 title = "Superstore Saga"
 version = "0.1.0"
-port = 8501
-slug = "preswald-project-885344"
-entrypoint = "hello.py"
+port = 8502
+slug = "preswald-project-885344"  
+entrypoint = "hello.py"    
 
 [branding]
 name = "Superstore Saga"
@@ -11,10 +11,10 @@ logo = "images/logo.png"
 favicon = "images/favicon.ico"
 primaryColor = "#F89613"
 
-[data.my_sample_superstore]
+[data.superstore]
 type = "csv"
 path = "data/my_sample_superstore.csv"
 
 [logging]
-level = "INFO"
+level = "INFO"  
 format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
