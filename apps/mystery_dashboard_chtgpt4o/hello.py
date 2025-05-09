@@ -6,7 +6,8 @@ workflow = Workflow()
 
 @workflow.atom()
 def load_data():
-    df = pd.read_csv("merged_data")
+    # Load merged data CSV directly
+    df = pd.read_csv("data/merged_data.csv")
     df["Order Date"] = pd.to_datetime(df["Order Date"])
     df["Profit Margin"] = df["Profit"] / df["Sales"]
     df["Month"] = df["Order Date"].dt.to_period("M").astype(str)
