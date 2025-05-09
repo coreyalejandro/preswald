@@ -1,0 +1,25 @@
+{
+  "name": "create-supawald",
+  "version": "1.0.2",
+  "description": "Create a Supawald project – a headless CMS for Supabase Storage",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/StructuredLabs/supawald.git"
+  },
+  "bugs": {
+    "url": "https://github.com/StructuredLabs/supawald/issues"
+  },
+  "homepage": "https://github.com/StructuredLabs/supawald#readme",
+  "bin": {
+    "create-supawald": "./create.js"
+  },
+  "files": [
+    "create.js",
+    "template/**"
+  ],
+  "dependencies": {
+    "fs-extra": "^11.1.1"
+  },
+  "license": "MIT",
+  "keywords": ["supabase", "cms", "nextjs", "tailwind", "headless", "template"]
+}
